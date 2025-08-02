@@ -34,7 +34,12 @@ namespace TaskManager.Controllers
 
         [HttpDelete("{id}")]
         public async Task<ActionResult<Response<string>>> DeleteTaskAllAsync(int id)
-           => await _service.DeleteTaskAllAsync(id);
+            => await _service.DeleteTaskAllAsync(id);
+
+
+        [HttpGet("pendientes")]
+        public async Task<ActionResult<Response<Tarea>>> GetPendingTasksAsync()
+            => await _service.GetPendingTasksAsync();
 
     }
 }
