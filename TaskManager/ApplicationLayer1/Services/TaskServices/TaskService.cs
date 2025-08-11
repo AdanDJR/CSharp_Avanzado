@@ -1,8 +1,10 @@
-﻿using DomainLayer.DTO;
+﻿using DomainLayer.Factories; // 🔹 Agregado
+using DomainLayer.DTO;
 using DomainLayer.Models;
 using InfrastructureLayer.Repositorio.Commons;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ApplicationLayer.Services.TaskServices
@@ -98,6 +100,19 @@ namespace ApplicationLayer.Services.TaskServices
             return response;
         }
 
+        
+        public async Task<Response<string>> AddHighPriorityTaskAsync(string descripcion)
+        {
+            var tarea = TareaFactory.CreateHighPriorityTask(descripcion);
+            return await AddTaskAllAsync(tarea);
+        }
+
+        public async Task<Response<string>> AddLowPriorityTaskAsync(string descripcion)
+        {
+            var tarea = TareaFactory.CreateLowPriorityTask(descripcion);
+            return await AddTaskAllAsync(tarea);
+        }
+
         public async Task<Response<string>> UpdateTaskAllAsync(Tarea tarea)
         {
             var response = new Response<string>();
@@ -129,6 +144,7 @@ namespace ApplicationLayer.Services.TaskServices
             }
             return response;
         }
+
         public async Task<Response<Tarea>> GetPendingTasksAsync()
         {
             var response = new Response<Tarea>();
@@ -151,10 +167,5 @@ namespace ApplicationLayer.Services.TaskServices
 
             return response;
         }
-
-
     }
 }
-
-
-

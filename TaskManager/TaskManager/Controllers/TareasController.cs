@@ -41,5 +41,13 @@ namespace TaskManager.Controllers
         public async Task<ActionResult<Response<Tarea>>> GetPendingTasksAsync()
             => await _service.GetPendingTasksAsync();
 
+        [HttpPost("alta-prioridad")]
+        public async Task<ActionResult<Response<string>>> AddHighPriorityTask(string descripcion)
+    => await _service.AddHighPriorityTaskAsync(descripcion);
+
+        [HttpPost("baja-prioridad")]
+        public async Task<ActionResult<Response<string>>> AddLowPriorityTask(string descripcion)
+            => await _service.AddLowPriorityTaskAsync(descripcion);
+
     }
 }
