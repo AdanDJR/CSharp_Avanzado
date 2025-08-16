@@ -1,9 +1,8 @@
-﻿using DomainLayer.Factories; // 🔹 Agregado
+﻿using DomainLayer.Factories; // 🔹
 using DomainLayer.DTO;
 using DomainLayer.Models;
 using InfrastructureLayer.Repositorio.Commons;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -11,11 +10,13 @@ namespace ApplicationLayer.Services.TaskServices
 {
     public class TaskService
     {
-        private readonly ICommonsProces<Tarea> _commonsProces;
+        private readonly ICommonsProces<Tarea> _commonsProces; // Lecturas directas
+        private readonly TaskQueueService _queue;               // Escrituras en cola
 
-        public TaskService(ICommonsProces<Tarea> commonsProces)
+        public TaskService(ICommonsProces<Tarea> commonsProces, TaskQueueService queue)
         {
             _commonsProces = commonsProces;
+            _queue = queue;
         }
 
         // Delegado
@@ -23,11 +24,12 @@ namespace ApplicationLayer.Services.TaskServices
 
         // Action 
         private Action<Tarea> notifyCreation = tarea =>
-            Console.WriteLine($"Tarea creada: {tarea.Descripcion}, vencimiento: {tarea.DueData}");
+            Console.WriteLine($"Tarea creada (encolada): {tarea.Descripcion}, vencimiento: {tarea.DueData}");
 
         // Func 
         private Func<Tarea, int> calculateDaysLeft = tarea =>
             (tarea.DueData - DateTime.Now).Days;
+
 
         public async Task<Response<Tarea>> GetTaskAllAsync()
         {
@@ -85,13 +87,14 @@ namespace ApplicationLayer.Services.TaskServices
 
                 notifyCreation(tarea);
 
-                var resul = await _commonsProces.AddAsync(tarea);
-
-                response.Message = resul.Message;
-                response.Successful = resul.IsSuccess;
+                
+                _queue.EnqueueAdd(tarea);
 
                 int daysLeft = calculateDaysLeft(tarea);
-                Console.WriteLine($"Días restantes para completar la tarea: {daysLeft}");
+                Console.WriteLine($"Días restantes estimados: {daysLeft}");
+
+                response.Successful = true;
+                response.Message = $"Tarea '{tarea.Descripcion}' encolada para procesamiento secuencial.";
             }
             catch (Exception e)
             {
@@ -100,7 +103,6 @@ namespace ApplicationLayer.Services.TaskServices
             return response;
         }
 
-        
         public async Task<Response<string>> AddHighPriorityTaskAsync(string descripcion)
         {
             var tarea = TareaFactory.CreateHighPriorityTask(descripcion);
@@ -118,9 +120,9 @@ namespace ApplicationLayer.Services.TaskServices
             var response = new Response<string>();
             try
             {
-                var resul = await _commonsProces.UpdateAsync(tarea);
-                response.Message = resul.Message;
-                response.Successful = resul.IsSuccess;
+                _queue.EnqueueUpdate(tarea);
+                response.Successful = true;
+                response.Message = $"Actualización de la tarea '{tarea.Descripcion}' encolada.";
             }
             catch (Exception e)
             {
@@ -134,9 +136,9 @@ namespace ApplicationLayer.Services.TaskServices
             var response = new Response<string>();
             try
             {
-                var resul = await _commonsProces.DeleteAsync(id);
-                response.Message = resul.Message;
-                response.Successful = resul.IsSuccess;
+                _queue.EnqueueDelete(id);
+                response.Successful = true;
+                response.Message = $"Eliminación de la tarea Id={id} encolada.";
             }
             catch (Exception e)
             {

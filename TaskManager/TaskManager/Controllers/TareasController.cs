@@ -1,7 +1,6 @@
 ﻿using ApplicationLayer.Services.TaskServices;
 using DomainLayer.DTO;
 using DomainLayer.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace TaskManager.Controllers
@@ -11,9 +10,12 @@ namespace TaskManager.Controllers
     public class TareasController : ControllerBase
     {
         private readonly TaskService _service;
-        public TareasController(TaskService service)
+        private readonly TaskQueueService _queue;
+
+        public TareasController(TaskService service, TaskQueueService queue)
         {
             _service = service;
+            _queue = queue;
         }
 
         [HttpGet]
@@ -36,18 +38,24 @@ namespace TaskManager.Controllers
         public async Task<ActionResult<Response<string>>> DeleteTaskAllAsync(int id)
             => await _service.DeleteTaskAllAsync(id);
 
-
         [HttpGet("pendientes")]
         public async Task<ActionResult<Response<Tarea>>> GetPendingTasksAsync()
             => await _service.GetPendingTasksAsync();
 
         [HttpPost("alta-prioridad")]
         public async Task<ActionResult<Response<string>>> AddHighPriorityTask(string descripcion)
-    => await _service.AddHighPriorityTaskAsync(descripcion);
+            => await _service.AddHighPriorityTaskAsync(descripcion);
 
         [HttpPost("baja-prioridad")]
         public async Task<ActionResult<Response<string>>> AddLowPriorityTask(string descripcion)
             => await _service.AddLowPriorityTaskAsync(descripcion);
 
+        // 🚀 Estado de la cola (para pruebas/diagnóstico)
+        [HttpGet("cola/estado")]
+        public IActionResult GetQueueStatus()
+        {
+            var status = _queue.GetStatus();
+            return Ok(status);
+        }
     }
 }

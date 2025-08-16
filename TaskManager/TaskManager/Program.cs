@@ -14,8 +14,15 @@ builder.Services.AddDbContext<TaskManagerContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerDB"));
 });
 
+// Repositorios
 builder.Services.AddScoped<ICommonsProces<Tarea>, TaskRepository>();
+
+// Servicios de aplicación
 builder.Services.AddScoped<TaskService>();
+
+// Cola secuencial (Singleton para que quede activa todo el tiempo)
+builder.Services.AddSingleton<TaskQueueService>();
+
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -24,17 +31,12 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-//using (var scope = app.Services.CreateScope())
-//{
-//    var context = scope.ServiceProvider.GetRequiredService<TaskManagerContext>();
-//}
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
 
