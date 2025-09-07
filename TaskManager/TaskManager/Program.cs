@@ -11,22 +11,31 @@ using System.Text;
 using ApplicationLayer.Services;
 using Microsoft.OpenApi.Models;
 
+// 👇 Importar SignalR y namespace del Hub/servicio
+using TaskManager.Hubs;
+using TaskManager.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-
+// Configuración de DbContext
 builder.Services.AddDbContext<TaskManagerContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagerDB"));
 });
 
+// Inyección de dependencias
 builder.Services.AddScoped<ICommonsProces<Tarea>, TaskRepository>();
-
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<JwtService>();
-
 builder.Services.AddSingleton<TaskQueueService>();
 
 builder.Services.AddControllers();
+
+// 👇 Registrar SignalR
+builder.Services.AddSignalR();
+
+// 👇 Registrar el servicio de notificación de SignalR (usando namespace completo para evitar ambigüedad)
+builder.Services.AddScoped<TaskManager.Services.INotificationService, TaskManager.Services.SignalRNotificationService>();
 
 // Swagger/OpenAPI con soporte para JWT
 builder.Services.AddEndpointsApiExplorer();
@@ -60,8 +69,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ====== CONFIGURACIÓN JWT ======
-var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]); 
+// ====== Configuración JWT ======
+var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -90,10 +99,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// 👇 Mapear Hub de SignalR
+app.MapHub<TasksHub>("/taskshub");
 
 app.Run();

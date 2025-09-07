@@ -2,6 +2,7 @@
 using DomainLayer.DTO;
 using DomainLayer.Models;
 using Microsoft.AspNetCore.Mvc;
+using TaskManager.Services; // 👈 Para INotificationService
 
 namespace TaskManager.Controllers
 {
@@ -11,11 +12,14 @@ namespace TaskManager.Controllers
     {
         private readonly TaskService _service;
         private readonly TaskQueueService _queue;
+        private readonly INotificationService _notifier;
 
-        public TareasController(TaskService service, TaskQueueService queue)
+        // Inyectamos TaskService, TaskQueueService y el servicio de notificación
+        public TareasController(TaskService service, TaskQueueService queue, INotificationService notifier)
         {
             _service = service;
             _queue = queue;
+            _notifier = notifier;
         }
 
         [HttpGet]
@@ -28,7 +32,17 @@ namespace TaskManager.Controllers
 
         [HttpPost]
         public async Task<ActionResult<Response<string>>> AddTaskAllAsync(Tarea tarea)
-            => await _service.AddTaskAllAsync(tarea);
+        {
+            var result = await _service.AddTaskAllAsync(tarea);
+
+            if (result.Successful)
+            {
+                // 🔔 Notificar a todos los clientes conectados
+                await _notifier.TaskCreated(tarea);
+            }
+
+            return result;
+        }
 
         [HttpPut]
         public async Task<ActionResult<Response<string>>> UpdateTaskAllAsync(Tarea tarea)
@@ -44,11 +58,31 @@ namespace TaskManager.Controllers
 
         [HttpPost("alta-prioridad")]
         public async Task<ActionResult<Response<string>>> AddHighPriorityTask(string descripcion)
-            => await _service.AddHighPriorityTaskAsync(descripcion);
+        {
+            var result = await _service.AddHighPriorityTaskAsync(descripcion);
+
+            if (result.Successful)
+            {
+                // 🔔 Notificar a todos los clientes conectados
+                await _notifier.TaskCreated(new Tarea { Descripcion = descripcion, Status = "Alta prioridad", DueData = DateTime.Now.AddDays(1) });
+            }
+
+            return result;
+        }
 
         [HttpPost("baja-prioridad")]
         public async Task<ActionResult<Response<string>>> AddLowPriorityTask(string descripcion)
-            => await _service.AddLowPriorityTaskAsync(descripcion);
+        {
+            var result = await _service.AddLowPriorityTaskAsync(descripcion);
+
+            if (result.Successful)
+            {
+                // 🔔 Notificar a todos los clientes conectados
+                await _notifier.TaskCreated(new Tarea { Descripcion = descripcion, Status = "Baja prioridad", DueData = DateTime.Now.AddDays(1) });
+            }
+
+            return result;
+        }
 
         // 🚀 Estado de la cola (para pruebas/diagnóstico)
         [HttpGet("cola/estado")]

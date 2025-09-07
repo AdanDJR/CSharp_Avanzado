@@ -2,11 +2,7 @@
 using DomainLayer.DTO;
 using DomainLayer.Models;
 using InfrastructureLayer.Repositorio.Commons;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace ApplicationLayer.Services.TaskServices
 {
@@ -15,12 +11,6 @@ namespace ApplicationLayer.Services.TaskServices
         private readonly ICommonsProces<Tarea> _commonsProces;
         private readonly TaskQueueService _queue;
         private readonly ConcurrentDictionary<string, object> _cache = new();
-
-        public TaskService(ICommonsProces<Tarea> commonsProces, TaskQueueService queue)
-        {
-            _commonsProces = commonsProces;
-            _queue = queue;
-        }
 
         private delegate bool ValidateTask(Tarea tarea);
         private Action<Tarea> notifyCreation = tarea =>
@@ -33,43 +23,10 @@ namespace ApplicationLayer.Services.TaskServices
             _cache.Clear();
         }
 
-        public async Task<Response<Tarea>> GetTaskAllAsync()
+        public TaskService(ICommonsProces<Tarea> commonsProces, TaskQueueService queue)
         {
-            var response = new Response<Tarea>();
-            try
-            {
-                response.DataList = await _commonsProces.GetAllAsync();
-                response.Successful = true;
-            }
-            catch (Exception e)
-            {
-                response.Errors.Add(e.Message);
-            }
-            return response;
-        }
-
-        public async Task<Response<Tarea>> GetTaskByIdAllAsync(int id)
-        {
-            var response = new Response<Tarea>();
-            try
-            {
-                var result = await _commonsProces.GetIdAsync(id);
-                if (result != null)
-                {
-                    response.SingleData = result;
-                    response.Successful = true;
-                }
-                else
-                {
-                    response.Successful = false;
-                    response.Message = "No se encontro informacion";
-                }
-            }
-            catch (Exception e)
-            {
-                response.Errors.Add(e.Message);
-            }
-            return response;
+            _commonsProces = commonsProces;
+            _queue = queue;
         }
 
         public async Task<Response<string>> AddTaskAllAsync(Tarea tarea)
@@ -142,6 +99,45 @@ namespace ApplicationLayer.Services.TaskServices
                 InvalidateCache();
                 response.Successful = true;
                 response.Message = $"Eliminación de la tarea Id={id} encolada.";
+            }
+            catch (Exception e)
+            {
+                response.Errors.Add(e.Message);
+            }
+            return response;
+        }
+
+        public async Task<Response<Tarea>> GetTaskAllAsync()
+        {
+            var response = new Response<Tarea>();
+            try
+            {
+                response.DataList = await _commonsProces.GetAllAsync();
+                response.Successful = true;
+            }
+            catch (Exception e)
+            {
+                response.Errors.Add(e.Message);
+            }
+            return response;
+        }
+
+        public async Task<Response<Tarea>> GetTaskByIdAllAsync(int id)
+        {
+            var response = new Response<Tarea>();
+            try
+            {
+                var result = await _commonsProces.GetIdAsync(id);
+                if (result != null)
+                {
+                    response.SingleData = result;
+                    response.Successful = true;
+                }
+                else
+                {
+                    response.Successful = false;
+                    response.Message = "No se encontró información";
+                }
             }
             catch (Exception e)
             {
